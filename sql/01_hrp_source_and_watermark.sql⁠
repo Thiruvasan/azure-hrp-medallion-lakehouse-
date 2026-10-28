@@ -1,0 +1,64 @@
+/* =========================================================================
+   SCRIPT: 01_hrp_source_and_watermark.sql
+   PURPOSE: Setup HRP Source Table, ADF Watermark Control Table & Stored Proc
+   ========================================================================= */
+
+CREATE SCHEMA hrp;
+GO
+CREATE SCHEMA ctl;
+GO
+
+-- 1. Source HRP Payroll Transactions Table
+CREATE TABLE hrp.Payroll_Transactions (
+    TransactionID INT IDENTITY(1,1) PRIMARY KEY,
+    EmpID VARCHAR(20) NOT NULL,
+    EmpName NVARCHAR(100) NOT NULL,
+    Department VARCHAR(50) NOT NULL,
+    Country VARCHAR(50) NOT NULL,
+    BaseSalary DECIMAL(18,2) NOT NULL,
+    OvertimeHours DECIMAL(5,2) DEFAULT 0,
+    OvertimePay DECIMAL(18,2) DEFAULT 0,
+    TaxDeducted DECIMAL(18,2) DEFAULT 0,
+    LeaveDays INT DEFAULT 0,
+    PayPeriod CHAR(7) NOT NULL, -- Format: YYYY-MM
+    LastModifiedDate DATETIME2 NOT NULL DEFAULT SYSDATETIME()
+);
+
+-- Create Covering Index for fast ADF Incremental Watermark Extraction
+CREATE NONCLUSTERED INDEX IX_Payroll_Transactions_Watermark
+ON hrp.Payroll_Transactions (LastModifiedDate ASC)
+INCLUDE (EmpID, Department, BaseSalary, OvertimePay, TaxDeducted, PayPeriod);
+GO
+
+-- 2. ADF Metadata & Watermark Control Table
+CREATE TABLE ctl.WatermarkControl (
+    TableName VARCHAR(100) PRIMARY KEY,
+    WatermarkColumn VARCHAR(100) NOT NULL,
+    LastWatermarkValue DATETIME2 NOT NULL,
+    IsActive BIT DEFAULT 1
+);
+
+INSERT INTO ctl.WatermarkControl (TableName, WatermarkColumn, LastWatermarkValue, IsActive)
+VALUES ('hrp.Payroll_Transactions', 'LastModifiedDate', '2026-01-01 00:00:00', 1);
+GO
+
+-- 3. Stored Procedure called by ADF after successful Copy Activity
+CREATE OR ALTER PROCEDURE ctl.usp_UpdateWatermark
+    @TableName VARCHAR(100),
+    @NewWatermarkValue DATETIME2
+AS
+BEGIN
+    SET NOCOUNT ON;
+    BEGIN TRY
+        BEGIN TRANSACTION;
+            UPDATE ctl.WatermarkControl
+            SET LastWatermarkValue = @NewWatermarkValue
+            WHERE TableName = @TableName;
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH
+END;
+GO
