@@ -1,0 +1,7 @@
+emp_id,emp_name,department,country,base_salary,overtime_hours,overtime_pay,tax_deducted,leave_days,pay_period,last_modified_date
+EMP1001,Arun Kumar,Engineering,Singapore,8500.00,12,600.00,910.00,1,2026-09,2026-09-30 18:30:00
+EMP1002,Sarah Lim,Finance,Singapore,7200.00,4,180.00,738.00,0,2026-09,2026-09-30 18:35:00
+EMP1003,Karthik R,Operations,Malaysia,5400.00,18,720.00,612.00,2,2026-09,2026-09-30 18:40:00
+EMP1004,David Tan,Engineering,Singapore,9200.00,0,0.00,920.00,3,2026-09,2026-09-30 18:45:00
+EMP1005,Priya Nair,Human Resources,UAE,6800.00,6,270.00,0.00,0,2026-09,2026-09-30 18:50:00
+EMP1001,Arun Kumar,Data Engineering,Singapore,9500.00,10,550.00,1005.00,0,2026-10,2026-10-25 19:00:00
